@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+
+require 'net/http'
+
+name = ARGV[0]
+
+def say(text, voice: 'Karen')
+  puts "> #{text}"
+  fork { `say -v #{voice} "#{text.gsub(')','')}"` }
+end
+
+say "Hello, #{name}, say something:"
+print '# '
+
+loop do
+  case STDIN.gets.chomp
+  when 'Hello, Karen' then say 'Hello, again)'
+  when 'You are so beautyful' then say "Thank you're, you too)"
+  when 'Can you say currency'
+    say 'What country:'
+
+    countries = {
+      '1' => ['USA', 'USD'],
+      '2' => ['Great Britain', 'GBP'],
+      '3' => ['Europe', 'EUR'],
+    }
+
+    countries.each { |c, (cou, cur)| puts "#{c}: #{cou}(#{cur})" }
+
+    code = STDIN.gets.chomp
+
+    currency_code = countries[code]&.last
+
+    unless currency_code
+      say 'Sorry, you choose wrong country'
+      next
+    end
+
+    currency_url = URI("http://free.currencyconverterapi.com/api/v3/convert?q=#{currency_code}_RUB&compact=y&callback=?")
+    response = Net::HTTP.get_response(currency_url)
+    currency = response.body[/\"val\"\:(\d+\.\d+)/, 1]
+
+    say "Now currency of ruble by #{countries[code][0]} is #{currency}"
+  when 'Чо нада' then say 'А чо!', voice: 'Milena'
+  when /Calculate: (.+)/
+    say 'Ok, one moment'
+    sleep 1
+    say eval(Regexp.last_match[1]).to_s
+  when 'Good bye', 'bye', 'sy'
+    say ['See you', 'Bye bye', 'Good bye my love'].sample
+    break
+  when /.+/ then say "I don't understand you, can you explaine this?"
+  else
+    say 'May be say you something to me'
+  end
+end
